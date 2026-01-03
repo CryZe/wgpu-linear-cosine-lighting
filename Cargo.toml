@@ -1,0 +1,36 @@
+[package]
+name = "wgpu-linear-cosine-lighting"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ltc-demo"
+path = "src/bin.rs"
+
+[dependencies]
+wgpu = "24"
+winit = "0.30"
+bytemuck = { version = "1.21", features = ["derive"] }
+glam = "0.29"
+log = "0.4"
+half = { version = "2.4", features = ["bytemuck"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = "0.4"
+env_logger = "0.11"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+console_log = "1"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Window",
+    "Element",
+    "HtmlCanvasElement",
+] }

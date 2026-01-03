@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WGPU LTC Area Lighting</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background-color: #1a1a2e;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, sans-serif;
+        color: #eee;
+      }
+      h1 {
+        margin-bottom: 10px;
+        color: #fff;
+      }
+      .controls {
+        margin-bottom: 15px;
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      .controls kbd {
+        background: #333;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+      canvas {
+        border: 2px solid #333;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 1280px;
+        height: 720px;
+      }
+      canvas:fullscreen {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+        border-radius: 0;
+      }
+      .loading {
+        position: absolute;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WGPU LTC Area Lighting Demo</h1>
+    <div class="controls">
+      <kbd>WASD</kbd> Move | <kbd>Mouse</kbd> Look | <kbd>↑↓←→</kbd> Move Light
+      | <kbd>[ ]</kbd> Roughness | <kbd>T</kbd> Toggle Texture |
+      <kbd>F</kbd> Fullscreen | <kbd>Esc</kbd> Release Mouse
+    </div>
+    <canvas id="canvas"></canvas>
+    <div class="loading" id="loading">Loading WebGPU...</div>
+
+    <script type="module">
+      import init from "./pkg/wgpu_linear_cosine_lighting.js";
+
+      async function run() {
+        // Set canvas size before init
+        const canvas = document.getElementById("canvas");
+        canvas.width = 1280;
+        canvas.height = 720;
+
+        try {
+          await init();
+          document.getElementById("loading").style.display = "none";
+
+          // Fullscreen toggle with F key
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "f" || e.key === "F") {
+              if (!document.fullscreenElement) {
+                canvas.requestFullscreen().catch((err) => {
+                  console.log("Fullscreen error:", err);
+                });
+              } else {
+                document.exitFullscreen();
+              }
+            }
+          });
+
+          // Lock pointer when entering fullscreen
+          document.addEventListener("fullscreenchange", () => {
+            if (document.fullscreenElement === canvas) {
+              canvas.requestPointerLock();
+            }
+          });
+        } catch (e) {
+          document.getElementById("loading").textContent =
+            "Error: " + e.message;
+          console.error(e);
+        }
+      }
+
+      run();
+    </script>
+  </body>
+</html>

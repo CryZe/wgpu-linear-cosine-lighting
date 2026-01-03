@@ -1,0 +1,73 @@
+# This workflow builds the WASM package and deploys it to GitHub Pages
+# Assumes the output is in the `pkg/` directory and `index.html` is at the root
+
+name: Build and Deploy WASM to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v2
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Choose wasm-bindgen-cli version
+        shell: bash
+        run: echo "version=$(cargo tree -i wasm-bindgen --target wasm32-unknown-unknown --depth 0 | sed 's/.* v//g')" >> $GITHUB_OUTPUT
+        id: wasm-bindgen
+
+      - name: Download wasm-bindgen-cli
+        uses: robinraju/release-downloader@v1.9
+        with:
+          repository: "rustwasm/wasm-bindgen"
+          tag: ${{ steps.wasm-bindgen.outputs.version }}
+          fileName: "wasm-bindgen-${{ steps.wasm-bindgen.outputs.version }}-x86_64-unknown-linux-musl.tar.gz"
+          out-file-path: "/home/runner/.cargo/bin"
+
+      - name: Install wasm-bindgen-cli
+        shell: bash
+        run: |
+          cd /home/runner/.cargo/bin
+          tar -xzf wasm-bindgen-${{ steps.wasm-bindgen.outputs.version }}-x86_64-unknown-linux-musl.tar.gz
+          mv wasm-bindgen-${{ steps.wasm-bindgen.outputs.version }}-x86_64-unknown-linux-musl/wasm* .
+
+      - name: Build WASM (cargo build)
+        run: |
+          cargo build --release --target wasm32-unknown-unknown --lib
+
+      - name: Run wasm-bindgen
+        run: |
+          mkdir -p pkg
+          wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/wgpu_linear_cosine_lighting.wasm
+
+      - name: Prepare GitHub Pages output
+        run: |
+          mkdir -p dist/pkg
+          cp index.html dist/
+          cp -r pkg/* dist/pkg/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
